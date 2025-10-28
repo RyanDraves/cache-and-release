@@ -28,7 +28,7 @@ jobs:
       
       - name: Copy build artifacts
         run: |
-          cp -r bazel-bin/external/libzmq+/libzmq/include/* libzmq-linux-x86_64/include/
+          cp -rL bazel-bin/external/libzmq+/libzmq/include/* libzmq-linux-x86_64/include/
           cp bazel-bin/external/libzmq+/libzmq/lib/libzmq.a libzmq-linux-x86_64/lib/
       
       - name: Create tarball
