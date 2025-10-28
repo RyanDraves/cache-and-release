@@ -1,0 +1,7 @@
+# Generated things
+bazel-*/
+bazel-bin
+bazel-cache-and-release
+bazel-out
+bazel-testlogs
+MODULE.bazel.lock

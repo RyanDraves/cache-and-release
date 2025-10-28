@@ -1,0 +1,8 @@
+"""Publishing binaries of libraries without published binaries"""
+module(
+    name = "cache_and_release",
+    version = "0.1.0",
+    compatibility_level = 0,
+)
+
+bazel_dep(name = "libzmq", version = "4.3.5.bcr.4")

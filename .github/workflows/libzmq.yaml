@@ -1,0 +1,49 @@
+name: Build and Release libzmq
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Bazel
+        uses: bazel-contrib/setup-bazel@0.15.0
+        with:
+          bazelisk-cache: true
+      
+      - name: Build libzmq
+        run: bazel build @libzmq
+      
+      - name: Create artifact directory
+        run: |
+          mkdir -p libzmq-linux-x86_64/include
+          mkdir -p libzmq-linux-x86_64/lib
+      
+      - name: Copy build artifacts
+        run: |
+          cp -r bazel-bin/external/libzmq+/libzmq/include/* libzmq-linux-x86_64/include/
+          cp bazel-bin/external/libzmq+/libzmq/lib/libzmq.a libzmq-linux-x86_64/lib/
+      
+      - name: Create tarball
+        run: tar -czf libzmq-linux-x86_64.tar.gz libzmq-linux-x86_64
+      
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: libzmq-v4.3.5
+          name: libzmq v4.3.5
+          body: |
+            Pre-built binaries of [libzmq](https://github.com/zeromq/libzmq) v4.3.5 for Linux x86_64.
+            
+            This release contains the static library (`libzmq.a`) and header files built using Bazel.
+            
+            Upstream project: https://github.com/zeromq/libzmq
+          draft: false
+          prerelease: false
+          files: libzmq-linux-x86_64.tar.gz
+          fail_on_unmatched_files: true
