@@ -2,50 +2,80 @@ name: Build and Release libzmq
 
 on:
   workflow_dispatch:
+    inputs:
+      tag_name:
+        description: Release tag
+        default: libzmq-v4.3.5-1
+        required: true
 
 jobs:
-  build-and-release:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux-x86_64
+          - os: macos-latest
+            platform: macos-arm64
+    runs-on: ${{ matrix.os }}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      
+
       - name: Set up Bazel
         uses: bazel-contrib/setup-bazel@0.15.0
         with:
           bazelisk-cache: true
-      
+
       - name: Build libzmq
         run: bazel build @libzmq
-      
+
       - name: Create artifact directory
         run: |
-          mkdir -p libzmq-linux-x86_64/include
-          mkdir -p libzmq-linux-x86_64/lib
-      
+          mkdir -p libzmq-${{ matrix.platform }}/include
+          mkdir -p libzmq-${{ matrix.platform }}/lib
+
       - name: Copy build artifacts
         run: |
-          cp -rL bazel-bin/external/libzmq+/libzmq/include/* libzmq-linux-x86_64/include/
-          cp bazel-bin/external/libzmq+/libzmq/lib/libzmq.a libzmq-linux-x86_64/lib/
-      
+          cp -rL bazel-bin/external/libzmq+/libzmq/include/* libzmq-${{ matrix.platform }}/include/
+          cp bazel-bin/external/libzmq+/libzmq/lib/libzmq.a libzmq-${{ matrix.platform }}/lib/
+
       - name: Create tarball
-        run: tar -czf libzmq-linux-x86_64.tar.gz libzmq-linux-x86_64
-      
+        run: tar -czf libzmq-${{ matrix.platform }}.tar.gz libzmq-${{ matrix.platform }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: libzmq-${{ matrix.platform }}
+          path: libzmq-${{ matrix.platform }}.tar.gz
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: libzmq-v4.3.5
+          tag_name: ${{ inputs.tag_name }}
           name: libzmq v4.3.5
           body: |
-            Pre-built binaries of [libzmq](https://github.com/zeromq/libzmq) v4.3.5 for Linux x86_64.
-            
+            Pre-built binaries of [libzmq](https://github.com/zeromq/libzmq) v4.3.5 for Linux x86_64 and macOS arm64.
+
             This release contains the static library (`libzmq.a`) and header files built using Bazel.
-            
+
             Upstream project: https://github.com/zeromq/libzmq
           draft: false
           prerelease: false
-          files: libzmq-linux-x86_64.tar.gz
+          files: |
+            libzmq-linux-x86_64.tar.gz
+            libzmq-macos-arm64.tar.gz
           fail_on_unmatched_files: true
