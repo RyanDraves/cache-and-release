@@ -5,7 +5,7 @@ on:
     inputs:
       tag_name:
         description: Release tag
-        default: libzmq-v4.3.5-1
+        default: libzmq-v4.3.5-2
         required: true
 
 jobs:
